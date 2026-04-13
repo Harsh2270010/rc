@@ -6,6 +6,7 @@ import streamlit as st
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+from datetime import datetime
 
 # ─── CONSTANTS ───────────────────────────────────────────────────────────────
 BASE_URL = "https://api.subhxcosmo.in/api"
@@ -340,7 +341,7 @@ st.markdown("### ⚙️ Vehicle Series Configuration")
 
 st.markdown('<div class="lbl-text">Vehicle Series Prefix</div>', unsafe_allow_html=True)
 raw_prefix = st.text_input(
-    "", value="RJ02BJ",
+    "", value="RJ02CF",
     placeholder="e.g. MP16CB or RJ02BJ or DL01AB",
     label_visibility="collapsed",
     key="prefix_input"
@@ -413,7 +414,7 @@ if start_btn and not st.session_state.running and start <= end:
     st.session_state.running  = True
     st.session_state.results  = []
     st.session_state.done     = False
-    st.session_state.out_name = f"{prefix}_Vehicle_Data.xlsx"
+    st.session_state.out_name = f"{prefix}_Vehicle_Data_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
 
     total = end - start + 1
     fmt   = f"{prefix}{{n:04d}}"
@@ -445,18 +446,15 @@ if start_btn and not st.session_state.running and start <= end:
         data = fetch_vehicle(vehicle_no)
         time.sleep(delay)
 
-        # Check response code to determine status
-        vehicle_code = data.get("vehicle_code", 0)
-        challan_code = data.get("challan_code", 0)
-        
+        # Check if we have actual vehicle data (mobile_no or data presence indicates record exists)
         # Response code 200 = found, 205 = not found
-        if vehicle_code == 200 or challan_code == 200:
+        if data.get("mobile_no") or data.get("vehicle_data") or data.get("challan_data"):
             found_count += 1
             status = "FOUND"
             css = "log-found"
             mobile = data.get("mobile_no", "—")
-            challan_msg = "Yes" if challan_code == 200 else "No"
-            vehicle_msg = "Yes" if vehicle_code == 200 else "No"
+            challan_msg = "Yes" if data.get("challan_status") else "No"
+            vehicle_msg = "Yes" if data.get("vehicle_status") else "No"
             log_status = f"FOUND  |  Mobile: {mobile}"
             
             row_data = {
